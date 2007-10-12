@@ -1,0 +1,5 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=2042
+
+This script works under CLI Vim (not gvim) and provides a curses interface for switching between / opening files simlar to TextMate's Cmd-T command.  It requires Vim to be compiled with Ruby bindings, and if you want it to keep a history, also for Ruby's sqlite3 bindings to be installed (it makes a db in your home directory, .of.db, where it stores info on recently opened files and preferred shortcuts for certain files).  To open a file called accounts_controller.php, you could simply call OF (I bind it to Alt-T) and type in ac -- a list of files under your working directory come up that have these two letters in any order.  Move up and down with arrows or ^P/^N, scroll with your mouse, or click/enter to select.  Escape gets you out.  This is a work in progress.  The code has no comments and needs to be cleaned up, but it does what I want it to for now, and maybe what you want.
+
+This may be a little slow if run from a directory with a huge amount of files.  I usually start it from the base of whatever project I'm working on.
