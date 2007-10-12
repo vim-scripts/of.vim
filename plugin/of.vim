@@ -1,5 +1,6 @@
 function OF()
 ruby << EOF
+require 'rubygems'
 require 'find'
 require 'curses'
 require 'sqlite3'
@@ -39,7 +40,7 @@ def init_db
    @searches = Hash[*@searches.collect { |v| [v, v*2] }.flatten]
    if !@recent_files.empty? and File.exist? @recent_files[0][0] and $curbuf.name != @recent_files[0][0]
       @last_file = @recent_files[0][0]
-   elsif !@recent_files.empty? and File.exist? @recent_files[1][0] and $curbuf.name != @recent_files[1][0]
+   elsif !@recent_files.empty? and @recent_files.size > 1 and File.exist? @recent_files[1][0] and $curbuf.name != @recent_files[1][0]
       @last_file = @recent_files[1][0]
    else
       @last_file = ''
@@ -50,7 +51,7 @@ def make_regex(str)
    regex = ''
    str.each_byte do |p|
       p = p.chr
-      if ['.', '[', ']'].include? p
+      if ['.', '[', ']', '/'].include? p
          p = '\\' + p
       end
       regex += p + '.*?'
@@ -102,7 +103,7 @@ end
 
 def uniq_items
    @items.uniq!
-   if @last_file != ''
+   if @last_file != '' and @items.include? @last_file
       @items.delete @last_file
       @items.unshift @last_file
    end
