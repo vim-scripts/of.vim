@@ -33,8 +33,13 @@ include SQLite3
 @buffers = []
 
 def init_db
-   @db.execute('CREATE TABLE IF NOT EXISTS searches (sel_path TEXT, search_str TEXT, pwd TEXT, time INTEGER, PRIMARY KEY(search_str, pwd))')
-   @db.execute('CREATE TABLE IF NOT EXISTS recent_files (sel_path TEXT, time INTEGER, PRIMARY KEY(sel_path))')
+   # Using this syntax because some sqlite doesn't support CREATE TABLE IF NOT EXISTS
+   if @db.execute('SELECT COUNT(*) FROM sqlite_master WHERE name = \'searches\'')[0][0].to_i == 0
+      @db.execute('CREATE TABLE searches (sel_path TEXT, search_str TEXT, pwd TEXT, time INTEGER, PRIMARY KEY(search_str, pwd))')
+   end
+   if @db.execute('SELECT COUNT(*) FROM sqlite_master WHERE name = \'recent_files\'')[0][0].to_i == 0
+      @db.execute('CREATE TABLE recent_files (sel_path TEXT, time INTEGER, PRIMARY KEY(sel_path))')
+   end
    @searches = @db.execute("SELECT search_str, sel_path FROM searches WHERE pwd = '" + Dir.pwd + "' ORDER BY time DESC")
    @recent_files = @db.execute("SELECT sel_path FROM recent_files ORDER BY time DESC LIMIT 20")
    @searches = Hash[*@searches.collect { |v| [v, v*2] }.flatten]
