@@ -42,7 +42,7 @@ include Curses
 @buffers = []
 @last_file = ''
 @recent_files = []
-@searches = []
+@searches = {}
 
 def init_db
    # Using this syntax because some sqlite doesn't support CREATE TABLE IF NOT EXISTS
@@ -77,11 +77,7 @@ def make_regex(str)
 end
 
 def load_open_buffs
-   if @database
-      @items = @buffers + @searches.values
-   else
-      @items = @buffers
-   end
+   @items = @buffers + @searches.values
    @found_once = false
    @modeline = 'switch buffer: (current: ' + File.basename($curbuf.name.to_s) + ')'
    uniq_items
