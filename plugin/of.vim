@@ -1,9 +1,19 @@
 function OF()
 ruby << EOF
-require 'rubygems'
+begin
+   require 'rubygems'
+rescue LoadError => ex
+end
 require 'find'
 require 'curses'
-require 'sqlite3'
+@database = true
+begin
+   require 'sqlite3'
+   include SQLite3
+rescue LoadError => ex
+   puts 'Can\'t Load SQLite Library -- Continuing Without Database Support'
+   @database = false
+end
 
 module Curses
    def self.program
@@ -17,7 +27,6 @@ module Curses
 end
 
 include Curses
-include SQLite3
 
 @items = []
 @items_archive = {}
@@ -29,8 +38,11 @@ include SQLite3
 @d = 0
 @found_once = false
 @modeline = '*enter at least 2 chars* (current: ' + File.basename($curbuf.name.to_s) + ')'
-@db = Database.new(ENV['HOME'] + '/.of.db')
+@db = Database.new(ENV['HOME'] + '/.of.db') unless !@database
 @buffers = []
+@last_file = ''
+@recent_files = []
+@searches = []
 
 def init_db
    # Using this syntax because some sqlite doesn't support CREATE TABLE IF NOT EXISTS
@@ -65,7 +77,11 @@ def make_regex(str)
 end
 
 def load_open_buffs
-   @items = @buffers + @searches.values
+   if @database
+      @items = @buffers + @searches.values
+   else
+      @items = @buffers
+   end
    @found_once = false
    @modeline = 'switch buffer: (current: ' + File.basename($curbuf.name.to_s) + ')'
    uniq_items
@@ -193,14 +209,16 @@ def update_screen
 end
 
 def select_item
-   @db.execute("UPDATE searches SET sel_path = ?, time = datetime('now', 'localtime') WHERE search_str = ? AND  pwd = ?", @items[@selected - 1], @dd, Dir.pwd)
-   if @db.total_changes < 1
-      @db.execute("INSERT INTO searches VALUES (?, ?, ?, datetime('now', 'localtime'))", @items[@selected - 1], @dd, Dir.pwd)
-   end
-   changes = @db.total_changes
-   @db.execute("UPDATE recent_files SET time = datetime('now', 'localtime') WHERE sel_path = ?", @items[@selected - 1])
-   if changes == @db.total_changes
-      @db.execute("INSERT INTO recent_files VALUES (?, datetime('now', 'localtime'))", @items[@selected - 1])
+   if @database
+      @db.execute("UPDATE searches SET sel_path = ?, time = datetime('now', 'localtime') WHERE search_str = ? AND  pwd = ?", @items[@selected - 1], @dd, Dir.pwd)
+      if @db.total_changes < 1
+         @db.execute("INSERT INTO searches VALUES (?, ?, ?, datetime('now', 'localtime'))", @items[@selected - 1], @dd, Dir.pwd)
+      end
+      changes = @db.total_changes
+      @db.execute("UPDATE recent_files SET time = datetime('now', 'localtime') WHERE sel_path = ?", @items[@selected - 1])
+      if changes == @db.total_changes
+         @db.execute("INSERT INTO recent_files VALUES (?, datetime('now', 'localtime'))", @items[@selected - 1])
+      end
    end
    VIM::command('e! ' + @items[@selected - 1])
 end
@@ -234,7 +252,7 @@ def scroll_up
 end
 
 Curses.program do
-   init_db
+   init_db unless !@database
    VIM::Buffer.count.times {|b| @buffers.push VIM::Buffer[b].name unless VIM::Buffer[b].name == nil}
    load_open_buffs
    main_screen = init_screen
@@ -349,7 +367,7 @@ Curses.program do
       update_screen
    end
 
-   @db.close
+   @db.close unless !@database
    VIM::command('redraw!')
 end
 
