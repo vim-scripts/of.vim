@@ -206,9 +206,11 @@ end
 
 def select_item
    if @database
-      @db.execute("UPDATE searches SET sel_path = ?, time = datetime('now', 'localtime') WHERE search_str = ? AND  pwd = ?", @items[@selected - 1], @dd, Dir.pwd)
-      if @db.total_changes < 1
-         @db.execute("INSERT INTO searches VALUES (?, ?, ?, datetime('now', 'localtime'))", @items[@selected - 1], @dd, Dir.pwd)
+      if @dd != ''
+         @db.execute("UPDATE searches SET sel_path = ?, time = datetime('now', 'localtime') WHERE search_str = ? AND  pwd = ?", @items[@selected - 1], @dd, Dir.pwd)
+         if @db.total_changes < 1
+            @db.execute("INSERT INTO searches VALUES (?, ?, ?, datetime('now', 'localtime'))", @items[@selected - 1], @dd, Dir.pwd)
+         end
       end
       changes = @db.total_changes
       @db.execute("UPDATE recent_files SET time = datetime('now', 'localtime') WHERE sel_path = ?", @items[@selected - 1])
@@ -234,7 +236,7 @@ def move_up
 end
 
 def scroll_down
-   @offset += 1 unless @offset + @max_files == @items.size
+   @offset += 1 unless (@offset + @max_files == @items.size or @items.size < @max_files)
    if @selected <= @offset
       @selected = @offset + 1
    end
