@@ -109,11 +109,18 @@ def find_in_items(regex)
    if @items_archive[@dd]
       @items = @items_archive[@dd]
    else
-      @items.delete_if do |item|
-         !File.basename(item).match(regex)
+      @subst = 0
+      2.upto @dd.size do |subst|
+         if @items_archive[@dd[0,subst]]
+            @subst = subst
+         elsif @subst > 0
+            @items.delete_if do |item|
+               !File.basename(item).match(regex)
+            end
+            @items_archive[@dd[0,@subst]] = @items
+         end
       end
       uniq_items
-      @items_archive[@dd] = @items
    end
    @selected = 1
 end
@@ -200,6 +207,12 @@ def update_screen
          end
       end
       offset_count += 1
+   end
+   if @items.size < @max_files
+      (@items.size + 1).upto @max_files do |item|
+         setpos(1 + item, 0)
+         clrtoeol
+      end
    end
    setpos(0, @col)
 end
